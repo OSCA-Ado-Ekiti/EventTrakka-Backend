@@ -1,7 +1,8 @@
+from pydantic import EmailStr
+
 from app.enums import UserType
 from app.extras.models import BaseDBModel
 from app.managers import BaseModelManager
-from pydantic import EmailStr
 
 
 class User(BaseDBModel):
@@ -17,4 +18,3 @@ class User(BaseDBModel):
     @property
     def objects(self):
         return BaseModelManager(model_class=self.__class__)
-

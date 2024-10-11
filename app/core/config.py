@@ -45,6 +45,12 @@ class Settings(BaseSettings):
             self.FRONTEND_HOST
         ]
 
+    DESCRIPTION: str = (
+        "This is the official API Documentation for EventTrakka, all endpoints have not been implemented and "
+        "are susceptible to changes as the project is being actively developed. this is only a preview of the "
+        "likely APIs to expect for consumption"
+    )
+
     PROJECT_NAME: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int
@@ -66,7 +72,7 @@ class Settings(BaseSettings):
 
     SMTP_TLS: bool = True
     SMTP_SSL: bool = False
-    SMTP_PORT: int| None = None
+    SMTP_PORT: int | None = None
     SMTP_HOST: str | None = None
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None

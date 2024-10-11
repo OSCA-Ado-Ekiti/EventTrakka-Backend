@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
+from fastapi.responses import RedirectResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
@@ -14,6 +15,7 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
+    description=settings.DESCRIPTION,
 )
 
 # Set all CORS enabled origins
@@ -27,3 +29,8 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/", tags=["docs"])
+async def redirect_to_docs():
+    return RedirectResponse("/docs")

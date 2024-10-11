@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.routes import attendees, auth,events,organizations,users
+from app.api.routes import attendees, auth, events, organizations, users
 
 api_router = APIRouter()
 api_router.include_router(attendees.router, tags=["attendees"])

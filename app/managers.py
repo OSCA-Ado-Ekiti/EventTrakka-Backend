@@ -13,7 +13,7 @@ class BaseModelManager:
         self.session = get_db_session()
 
     async def create(
-            self, creation_data: dict, session: AsyncSession | None = None
+        self, creation_data: dict, session: AsyncSession | None = None
     ) -> BaseModel:
         session = session or self.session
         model = self.model_class.model_validate(creation_data)
@@ -23,7 +23,7 @@ class BaseModelManager:
         return model
 
     async def update(
-            self, id: UUID, update_data: dict, session: AsyncSession | None = None
+        self, id: UUID, update_data: dict, session: AsyncSession | None = None
     ):
         session = session or self.session
         model = await self.get(id=id, session=session)

@@ -5,11 +5,13 @@ you want to deep dive in the code, here are some guidelines to set up your envir
 
 ## Prerequisites
 
+The structure is adopted from the backend of [full-stack-fastapi-template](https://github.com/fastapi/full-stack-fastapi-template)
+
 - All pull requests should be sent to the `development` branch of the project as the `main` branch is reserved for 
 deploying the project.
 - Keep your local copy of the `main` and `development` branch clean and create your feature specific branch for your
   contributions.
-- All your feature branches should checkout from the `development` branch.
+- All your feature branches should check out from the `development` branch.
 - Sync your `development` branch regularly.
 - For the two choices for setting up this project locally, you will need to populate a `.env` file that you should create
 in the project's root with the following environmental variables required for the project to work correctly.

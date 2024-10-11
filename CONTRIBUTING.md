@@ -17,12 +17,12 @@ deploying the project.
 in the project's root with the following environmental variables required for the project to work correctly.
     ```dotenv
     PROJECT_NAME = "EventTrakka Backend"
-    POSTGRES_HOST = "" # Your postgress db host
-    POSTGRES_PORT = "" # Your postgres db port
-    POSTGRES_USER = "" # Your postgres db user
-    POSTGRES_PASSWORD = "" # Your postgres db password
-    POSTGRES_DB = "" # Your posgres db name
-    BACKEND_CORS_ORIGINS = "" # Comma separated values of all the allowed CORS origin
+    POSTGRES_HOST = "" # Your postgress db host (The value should be "database" if you're using docker)
+    POSTGRES_PORT = "" # Your postgres db port (e.g. "5432")
+    POSTGRES_USER = "" # Your postgres db user (e.g. "eventtrakka_admin")
+    POSTGRES_PASSWORD = "" # Your postgres db password (e.g. "password123")
+    POSTGRES_DB = "" # Your posgres db name (e.g. "eventrakka_db")
+    BACKEND_CORS_ORIGINS = "" # Comma separated values of all the allowed CORS origin (e.g. "http://127.0.0.1:3000,http://127.0.0.1:5173")
     ```
 - This project also uses [uv](https://docs.astral.sh/uv/) for managing its dependencies, its required to have in installed.
 

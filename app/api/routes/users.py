@@ -17,6 +17,6 @@ async def get_current_user(current_user: CurrentUser):
 
 
 @router.patch("/current-user")
-async def update_current_user():
+async def update_current_user(current_user: CurrentUser):
     """Update the user information for the user with the provided access token"""
     ...

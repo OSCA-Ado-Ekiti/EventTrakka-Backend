@@ -25,6 +25,9 @@ class UserModelManager(BaseModelManager):
             "is_active": is_active,
             "is_email_verified": is_email_verified,
         }
+        user = await self.get(session, self.model_class.email == email)
+        if user:
+            raise UserAlreadyExistError("user with this email already exist")
         return await super().create(creation_data=creation_data, session=session)
 
     async def authenticate(
@@ -56,3 +59,6 @@ class User(BaseDBModel, table=True):
     async def set_password(self, new_password: str):
         update_data = {"password": get_password_hash(new_password)}
         await self.objects.update(id=self.id, update_data=update_data)
+
+
+class UserAlreadyExistError(Exception): ...

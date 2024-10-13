@@ -1,12 +1,46 @@
-from fastapi import APIRouter
+from datetime import timedelta
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+
+from app.api.deps import CurrentUserViaRefreshToken
+from app.core import security
+from app.core.config import settings
+from app.models import User
+from app.models.schemas.api import (
+    AccessTokenSubject,
+    RefreshTokenSubject,
+    ResponseData,
+    Token,
+)
+from app.models.schemas.users import CreateUser, UserPublic
+from app.models.users import UserAlreadyExistError
 
 router = APIRouter(prefix="/auth")
 
 
-@router.post("/signup")
-async def signup_via_email():
+@router.post("/signup", status_code=status.HTTP_201_CREATED)
+async def signup_via_email(data: CreateUser):
     """Signup to EventTrakka with the email flow."""
-    ...
+    try:
+        user = await User.objects.create_user(
+            email=data.email,
+            password=data.password,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            is_email_verified=True,
+        )
+        # TODO: Send email verification mail
+        return ResponseData[UserPublic](
+            detail="Signup successful, verify email address via the email sent to user",
+            data=UserPublic.model_validate(user.model_dump()),
+        )
+    except UserAlreadyExistError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error),
+        )
 
 
 @router.post("/verify-email")

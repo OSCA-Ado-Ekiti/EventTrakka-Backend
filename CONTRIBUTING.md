@@ -17,6 +17,7 @@ deploying the project.
 in the project's root with the following environmental variables required for the project to work correctly.
     ```dotenv
     PROJECT_NAME = "EventTrakka Backend"
+    SECRET_KEY = "" # Your app secret key (e.g. X3kKmb-T085Gybe9wby9NUPZFxuy8YNvRyQ1br7EBvY0 )
     POSTGRES_HOST = "" # Your postgress db host (The value should be "database" if you're using docker)
     POSTGRES_PORT = "" # Your postgres db port (e.g. "5432")
     POSTGRES_USER = "" # Your postgres db user (e.g. "eventtrakka_admin")

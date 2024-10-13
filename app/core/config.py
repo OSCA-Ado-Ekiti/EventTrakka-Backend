@@ -115,5 +115,8 @@ class Settings(BaseSettings):
 
         return self
 
+    # TODO: move to .env file
+    TIMEZONE: str = "Africa/Lagos"
+
 
 settings = Settings()  # type: ignore

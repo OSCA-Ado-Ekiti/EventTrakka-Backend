@@ -1,22 +1,22 @@
 """Create user
 
-Revision ID: cf36dc99cf72
+Revision ID: 9082aa0b3338
 Revises:
-Create Date: 2024-10-13 13:34:14.155735
+Create Date: 2024-10-13 17:13:19.472492
 
 """
 
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "cf36dc99cf72"
+revision: str = "9082aa0b3338"
 down_revision: str | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
+import sqlmodel
 
 
 def upgrade() -> None:
@@ -24,6 +24,8 @@ def upgrade() -> None:
     op.create_table(
         "users",
         sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("created_on", sa.TIMESTAMP(timezone=True), nullable=False),
+        sa.Column("last_updated_on", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("email", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("password", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("first_name", sqlmodel.sql.sqltypes.AutoString(), nullable=True),

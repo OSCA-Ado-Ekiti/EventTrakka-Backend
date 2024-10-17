@@ -1,5 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import Field, String
 
 from app.core.security import get_password_hash, verify_password
 from app.extras.models import BaseDBModel
@@ -44,10 +45,10 @@ class UserModelManager(BaseModelManager):
 class User(BaseDBModel, table=True):
     __tablename__ = "users"
 
-    email: EmailStr
-    password: str
-    first_name: str | None
-    last_name: str | None
+    email: EmailStr = Field(sa_column=Field(String(320)))
+    password: str = Field(sa_column=Field(String(60)))
+    first_name: str | None = Field(sa_column=Field(String(50)))
+    last_name: str | None = Field(sa_column=Field(String(50)))
     is_active: bool = Field(default=True)
     is_email_verified: bool = Field(False)
 

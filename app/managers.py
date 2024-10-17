@@ -17,8 +17,8 @@ class BaseModelManager:
     ) -> BaseModel:
         async for s in get_db_session():
             session = s or session
-            if "last_updated_on" not in creation_data.keys():
-                creation_data["last_updated_on"] = aware_datetime_now()
+            if "last_updated_at" not in creation_data.keys():
+                creation_data["last_updated_at"] = aware_datetime_now()
             model = self.model_class.model_validate(creation_data)
             session.add(model)
             await session.commit()
@@ -30,8 +30,8 @@ class BaseModelManager:
     ):
         async for s in get_db_session():
             session = s or session
-            if "last_updated_on" not in update_data.keys():
-                update_data["last_updated_on"] = aware_datetime_now()
+            if "last_updated_at" not in update_data.keys():
+                update_data["last_updated_at"] = aware_datetime_now()
             model = await self.get(id=id, session=session)
             model = self.model_class.model_validate(
                 model.model_dump().update(update_data)

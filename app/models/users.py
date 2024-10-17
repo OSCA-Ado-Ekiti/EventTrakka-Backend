@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import Field, String
 
@@ -26,7 +27,10 @@ class UserModelManager(BaseModelManager):
             "is_active": is_active,
             "is_email_verified": is_email_verified,
         }
-        user = await self.get(session, self.model_class.email == email)
+        try:
+            user = await self.get(session, self.model_class.email == email)
+        except NoResultFound:
+            user = None
         if user:
             raise UserAlreadyExistError("user with this email already exist")
         return await super().create(creation_data=creation_data, session=session)

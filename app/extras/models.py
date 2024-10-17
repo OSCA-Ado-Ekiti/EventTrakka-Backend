@@ -8,7 +8,7 @@ from app.core.utils import aware_datetime_now
 
 class BaseDBModel(SQLModel):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    created_on: AwareDatetime = Field(
+    created_at: AwareDatetime = Field(
         default_factory=aware_datetime_now, sa_type=TIMESTAMP(timezone=True)
     )
-    last_updated_on: AwareDatetime | None = Field(sa_type=TIMESTAMP(timezone=True))
+    last_updated_at: AwareDatetime | None = Field(sa_type=TIMESTAMP(timezone=True))

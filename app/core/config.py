@@ -1,9 +1,12 @@
 import warnings
+from pathlib import Path
 from typing import Annotated, Any, Literal, Self
 
+from fastapi_mail import ConnectionConfig
 from pydantic import (
     AnyUrl,
     BeforeValidator,
+    EmailStr,
     PostgresDsn,
     computed_field,
     model_validator,
@@ -70,31 +73,50 @@ class Settings(BaseSettings):
             path=self.POSTGRES_DB,
         )
 
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
-    SMTP_PORT: int | None = None
-    SMTP_HOST: str | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
-    # TODO: update type to EmailStr when sqlmodel supports it
-    EMAILS_FROM_EMAIL: str | None = None
-    EMAILS_FROM_NAME: str | None = None
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
 
-    @model_validator(mode="after")
-    def _set_default_emails_from(self) -> Self:
-        if not self.EMAILS_FROM_NAME:
-            self.EMAILS_FROM_NAME = self.PROJECT_NAME
-        return self
+    OTP_EXPIRE_MINUTES: int = 60 * 5
+    OTP_LENGTH: int = 6
 
-    EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+    MAIL_USERNAME: str = "john"
+    MAIL_PASSWORD: str = "doe"
+    MAIL_FROM: EmailStr = "johndoe@eventtrakka.com"
+    MAIL_FROM_NAME: str = "John Doe"
+    MAIL_PORT: int = 1026
+    MAIL_SERVER: str = "test-smtp-server"
+    MAIL_STARTTLS: bool = False
+    MAIL_SSL_TLS: bool = False
+    MAIL_USE_CREDENTIALS: bool = False
+    MAIL_VALIDATE_CERTS: bool = False
+    MAIL_TIMEOUT: int = 60  # 1 minute
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
-    def emails_enabled(self) -> bool:
-        return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
+    def MAIL_TEMPLATES_DIR(self) -> Path:
+        directory = self.BASE_DIR / "app/email-templates"
+        if not directory.is_dir():
+            raise ValueError(
+                f"MAIL_TEMPLATES_DIR: {directory} is not a valid directory"
+            )
+        return directory
 
-    # TODO: update type to EmailStr when sqlmodel supports it
-    EMAIL_TEST_USER: str = "test@example.com"
+    @computed_field
+    @property
+    def MAIL_CONNECTION_CONFIG(self) -> ConnectionConfig:
+        return ConnectionConfig(
+            MAIL_USERNAME=self.MAIL_USERNAME,
+            MAIL_PASSWORD=self.MAIL_PASSWORD,
+            MAIL_FROM=self.MAIL_FROM,
+            MAIL_FROM_NAME=self.MAIL_FROM_NAME,
+            MAIL_PORT=self.MAIL_PORT,
+            MAIL_SERVER=self.MAIL_SERVER,
+            MAIL_STARTTLS=self.MAIL_STARTTLS,
+            MAIL_SSL_TLS=self.MAIL_SSL_TLS,
+            USE_CREDENTIALS=self.MAIL_USE_CREDENTIALS,
+            VALIDATE_CERTS=self.MAIL_VALIDATE_CERTS,
+            TEMPLATE_FOLDER=self.MAIL_TEMPLATES_DIR,
+            TIMEOUT=self.MAIL_TIMEOUT,
+        )
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
         if value == "changethis":

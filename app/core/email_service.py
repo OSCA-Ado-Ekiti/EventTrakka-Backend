@@ -1,6 +1,3 @@
-from pathlib import Path
-from typing import List, Optional
-
 from fastapi import HTTPException, status
 from fastapi_mail import MessageSchema, MessageType
 from pydantic import EmailStr

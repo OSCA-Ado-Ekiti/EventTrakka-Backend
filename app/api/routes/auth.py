@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+import random
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -16,6 +17,10 @@ from app.models.schemas.api import (
 )
 from app.models.schemas.users import CreateUser, UserPublic
 from app.models.users import UserAlreadyExistError
+from app.core.email_service import EmailService
+from app.models.otp import OTPRecord
+
+
 
 router = APIRouter(prefix="/auth")
 
@@ -29,9 +34,25 @@ async def signup_via_email(data: CreateUser):
             password=data.password,
             first_name=data.first_name,
             last_name=data.last_name,
-            is_email_verified=True,
+            is_email_verified=False,
         )
         # TODO: Send email verification mail
+
+        otp = ''.join(random.choices('0123456789', k=6))
+        print("This is OTP------->", otp)
+        await OTPRecord.objects.create_otp_record(
+            email=data.email,
+            otp_code=otp,
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
+        )
+        print("OtP Record Created")
+        email_service = EmailService()
+        await email_service.send_verification_email(
+            email=data.email,
+            name=data.first_name,
+            otp=otp
+        )
+        print("Email Sent")
         return ResponseData[UserPublic](
             detail="Signup successful, verify email address via the email sent to user",
             data=UserPublic.model_validate(user.model_dump()),
@@ -40,7 +61,7 @@ async def signup_via_email(data: CreateUser):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error),
-        )
+        ) from error
 
 
 @router.post("/verify-email")

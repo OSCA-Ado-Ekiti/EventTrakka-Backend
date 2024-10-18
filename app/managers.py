@@ -6,15 +6,16 @@ from sqlmodel import delete, select
 
 from app.core.db import get_db_session
 from app.core.utils import aware_datetime_now
+from app.extras.models import BaseDBModel
 
 
 class BaseModelManager:
     def __init__(self, model_class):
-        self.model_class: type[BaseModel] = model_class
+        self.model_class: type[BaseDBModel] = model_class
 
     async def create(
         self, *, creation_data: dict, session: AsyncSession | None = None
-    ) -> BaseModel:
+    ) -> BaseDBModel:
         async for s in get_db_session():
             session = s or session
             if "last_updated_at" not in creation_data.keys():

@@ -1,14 +1,15 @@
-from datetime import datetime, timedelta, timezone
-import random
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import CurrentUserViaRefreshToken
 from app.core import security
 from app.core.config import settings
+from app.core.email_service import EmailService
 from app.models import User
+from app.models.otp import OTPPurpose, OTPRecord
 from app.models.schemas.api import (
     AccessTokenSubject,
     RefreshTokenSubject,
@@ -17,16 +18,12 @@ from app.models.schemas.api import (
 )
 from app.models.schemas.users import CreateUser, UserPublic
 from app.models.users import UserAlreadyExistError
-from app.core.email_service import EmailService
-from app.models.otp import OTPRecord
-
-
 
 router = APIRouter(prefix="/auth")
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
-async def signup_via_email(data: CreateUser):
+async def signup_via_email(data: CreateUser, background_tasks: BackgroundTasks):
     """Signup to EventTrakka with the email flow."""
     try:
         user = await User.objects.create_user(
@@ -34,29 +31,20 @@ async def signup_via_email(data: CreateUser):
             password=data.password,
             first_name=data.first_name,
             last_name=data.last_name,
-            is_email_verified=False,
         )
-        # TODO: Send email verification mail
 
-        otp = ''.join(random.choices('0123456789', k=6))
-        print("This is OTP------->", otp)
-        await OTPRecord.objects.create_otp_record(
-            email=data.email,
-            otp_code=otp,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=10)
+        otp: OTPRecord = await OTPRecord.objects.create_otp(
+            user_id=user.id, purpose=OTPPurpose.EMAIL_VERIFICATION
         )
-        print("OtP Record Created")
+        # TODO: Check if email instantiation blocks
         email_service = EmailService()
-        await email_service.send_verification_email(
-            email=data.email,
-            name=data.first_name,
-            otp=otp
-        )
-        print("Email Sent")
+        task_kwargs = {"email": user.email, "name": user.first_name, "otp": otp.code}
+        background_tasks.add_task(email_service.send_verification_email, **task_kwargs)
         return ResponseData[UserPublic](
             detail="Signup successful, verify email address via the email sent to user",
             data=UserPublic.model_validate(user.model_dump()),
         )
+
     except UserAlreadyExistError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

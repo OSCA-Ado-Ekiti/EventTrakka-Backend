@@ -15,6 +15,7 @@ dependencies = [
     "pyjwt>=2.9.0",
     "python-multipart>=0.0.12",
     "sqlmodel>=0.0.22",
+    "fastapi-mail>=1.4.1",
 ]
 
 [tool.uv]

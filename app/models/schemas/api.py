@@ -28,3 +28,7 @@ class AccessTokenSubject(SQLModel):
 class RefreshTokenSubject(SQLModel):
     type: str = "refresh_token"
     user: UUID
+
+
+class ClientVerificationToken(SQLModel):
+    verification_token: str

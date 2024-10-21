@@ -12,6 +12,7 @@ from app.models import User
 from app.models.otp import OTPPurpose, OTPRecord
 from app.models.schemas.api import (
     AccessTokenSubject,
+    ClientVerificationToken,
     RefreshTokenSubject,
     ResponseData,
     Token,
@@ -20,6 +21,24 @@ from app.models.schemas.users import CreateUser, UserPublic
 from app.models.users import UserAlreadyExistError
 
 router = APIRouter(prefix="/auth")
+
+
+async def get_email_verification_client_verification_token(
+    user: User, background_tasks: BackgroundTasks
+) -> ClientVerificationToken:
+    otp: OTPRecord = await OTPRecord.objects.create_otp(
+        user_id=user.id, purpose=OTPPurpose.EMAIL_VERIFICATION
+    )
+    # TODO: Check if email instantiation blocks
+    email_service = EmailService()
+    task_kwargs = {"email": user.email, "name": user.first_name, "otp": otp.code}
+    background_tasks.add_task(email_service.send_verification_email, **task_kwargs)
+    verification_token_expires = timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+    verification_token_subject = AccessTokenSubject(user=user.id).model_dump_json()
+    token = security.create_access_token(
+        verification_token_subject, expires_delta=verification_token_expires
+    )
+    return ClientVerificationToken.model_validate({"verification_token": token})
 
 
 @router.post("/signup", status_code=status.HTTP_201_CREATED)
@@ -32,17 +51,12 @@ async def signup_via_email(data: CreateUser, background_tasks: BackgroundTasks):
             first_name=data.first_name,
             last_name=data.last_name,
         )
-
-        otp: OTPRecord = await OTPRecord.objects.create_otp(
-            user_id=user.id, purpose=OTPPurpose.EMAIL_VERIFICATION
+        data = await get_email_verification_client_verification_token(
+            user, background_tasks
         )
-        # TODO: Check if email instantiation blocks
-        email_service = EmailService()
-        task_kwargs = {"email": user.email, "name": user.first_name, "otp": otp.code}
-        background_tasks.add_task(email_service.send_verification_email, **task_kwargs)
         return ResponseData[UserPublic](
             detail="Signup successful, verify email address via the email sent to user",
-            data=UserPublic.model_validate(user.model_dump()),
+            data=data,
         )
 
     except UserAlreadyExistError as error:
@@ -64,6 +78,7 @@ async def verify_email():
 @router.post("/access-token")
 async def obtain_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    background_tasks: BackgroundTasks,
 ):
     """Obtain the access and refresh tokens to be used for protected endpoints.
 
@@ -78,8 +93,16 @@ async def obtain_access_token(
     elif not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user, contact admin")
     elif not user.is_email_verified:
+        verification_token = await get_email_verification_client_verification_token(
+            user, background_tasks
+        )
+        detail = ResponseData(
+            detail="User has not verified email address, please verify email address",
+            data=verification_token,
+        )
         raise HTTPException(
-            status_code=400, detail="User has not verified email address"
+            status_code=400,
+            detail=detail,
         )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     refresh_token_expires = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)

@@ -2,39 +2,22 @@ import secrets
 import string
 from datetime import timedelta
 from enum import Enum
+from typing import ClassVar
 from uuid import UUID
 
 from pydantic import AwareDatetime
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import TIMESTAMP, Field, String
 from sqlmodel import Enum as SAEnum
 
 from app.core.config import settings
 from app.core.utils import aware_datetime_now
 from app.extras.models import BaseDBModel
-from app.managers import BaseModelManager
+from app.models.managers.otp import OTPRecordManager
 
 
 class OTPPurpose(str, Enum):
     EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
     PASSWORD_RESET = "PASSWORD_RESET"
-
-
-class OTPRecordManager(BaseModelManager):
-    """Manager class for handling OTP-related database operations."""
-
-    async def create_otp(
-        self,
-        user_id: UUID,
-        purpose: OTPPurpose,
-        session: AsyncSession | None = None,
-    ) -> BaseDBModel:
-        creation_data = {
-            "purpose": purpose,
-            "user_id": user_id,
-        }
-
-        return await super().create(creation_data=creation_data, session=session)
 
 
 def generate_otp(length: int = 6) -> str:
@@ -68,15 +51,9 @@ class OTPRecord(BaseDBModel, table=True):
         description="Associated user ID if the OTP is for an existing user",
     )
 
-    @classmethod
-    @property
-    def objects(cls):
-        return OTPRecordManager(model_class=cls)
+    objects: ClassVar[OTPRecordManager["OTPRecord"]] = OTPRecordManager()
 
     @property
     def is_expired(self) -> bool:
         """Check if the OTP has expired."""
         return aware_datetime_now() > self.expires_at
-
-
-class OTPAlreadyExistError(Exception): ...

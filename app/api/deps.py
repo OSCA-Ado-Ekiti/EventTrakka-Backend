@@ -1,18 +1,15 @@
-import json
 from typing import Annotated, Literal
 
-import jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core import security
 from app.core.config import settings
 from app.core.db import get_db_session
+from app.core.security import APIScope, decode_jwt_subject
 from app.models import User
-from app.models.schemas.api import AccessTokenSubject, RefreshTokenSubject
 
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/auth/access-token"
@@ -24,49 +21,77 @@ TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
 async def get_current_user(
     session: AsyncSessionDep,
+    security_scopes: SecurityScopes,
     token: TokenDep,
-    token_type: Literal["access_token", "refresh_token"] = "access_token",
+    token_type: Literal[
+        "access_token", "refresh_token", "verification_token"
+    ] = "access_token",
 ) -> User:
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": authenticate_value},
+    )
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
-        )
-        subject = json.loads(payload["sub"])
-        if token_type == "access_token":
-            token_data = AccessTokenSubject.model_validate(subject)
-        elif token_type == "refresh_token":
-            token_data = RefreshTokenSubject.model_validate(subject)
-        else:
+        subject = decode_jwt_subject(token)
+        if token_type != subject.type:
             raise ValidationError("invalid token type")
-    except (InvalidTokenError, ValidationError):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
-        )
-    print(f"token data is {token_data}")
-    user = await User.objects.get(session, User.id == token_data.user)
-    if not user:
+    except (InvalidTokenError, ValidationError) as error:
+        raise credentials_exception from error
+    try:
+        user: User = await User.objects.get(session, User.id == subject.user_id)
+    except User.DoesNotExist:
         raise HTTPException(status_code=404, detail="User not found")
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user, contact admin")
+    if not user.is_email_verified:
+        raise HTTPException(status_code=400, detail="User pending email verification")
+    for scope in security_scopes.scopes:
+        if scope not in subject.scopes:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not enough permissions",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
     return user
 
 
 async def get_current_user_via_access_token(
     session: AsyncSessionDep,
+    security_scopes: SecurityScopes,
     token: TokenDep,
 ):
-    return await get_current_user(session, token, "access_token")
+    return await get_current_user(session, security_scopes, token, "access_token")
 
 
 async def get_current_user_via_refresh_token(
     session: AsyncSessionDep,
+    security_scopes: SecurityScopes,
     token: TokenDep,
 ):
-    return await get_current_user(session, token, "refresh_token")
+    return await get_current_user(session, security_scopes, token, "refresh_token")
+
+
+async def get_current_user_via_verification_token(
+    session: AsyncSessionDep,
+    security_scopes: SecurityScopes,
+    token: TokenDep,
+):
+    return await get_current_user(session, security_scopes, token, "verification_token")
 
 
 CurrentUser = Annotated[User, Depends(get_current_user_via_access_token)]
+
 CurrentUserViaRefreshToken = Annotated[
     User, Depends(get_current_user_via_refresh_token)
+]
+CurrentUserViaEmailVerificationToken = Annotated[
+    User,
+    Security(
+        get_current_user_via_verification_token, scopes=[APIScope.EMAIL_VERIFICATION]
+    ),
 ]

@@ -6,3 +6,6 @@ app.egg-info
 .coverage
 htmlcov
 .venv
+.git
+.env
+app/tests

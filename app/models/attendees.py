@@ -4,7 +4,6 @@ from pydantic import EmailStr
 from sqlmodel import Field
 
 from app.extras.models import BaseDBModel
-from app.managers import BaseModelManager
 
 
 class Attendee(BaseDBModel):
@@ -28,7 +27,3 @@ class Attendee(BaseDBModel):
         description="An event may be virtual or physical, this flag helps to indicate if the user attended the event",
     )
     email: EmailStr
-
-    @property
-    def objects(self):
-        return BaseModelManager(model_class=self.__class__)

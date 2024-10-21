@@ -110,7 +110,6 @@ class EventOfficial(BaseDBModel):
 
     event: Event | None = Field(foreign_key="events", ondelete="CASCADE")
     type: EventOfficialType = Field(sa_column=Field(SAEnum(EventOfficialType)))
-    avatar_url: str | None
     first_name: str = Field(sa_column=Field(String(50)))
     last_name: str = Field(sa_column=Field(String(50)))
     role: str = Field(

@@ -1,21 +1,22 @@
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from pydantic import BaseModel
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import delete, select
 
 from app.core.db import get_db_session
 from app.core.utils import aware_datetime_now
-from app.extras.models import BaseDBModel
+from app.models.exceptions import AlreadyExist, DoesNotExist
+
+if TYPE_CHECKING:
+    from app.extras.models import BaseDBModel
 
 
-class BaseModelManager:
-    def __init__(self, model_class):
-        self.model_class: type[BaseDBModel] = model_class
-
+class BaseModelManager[T: BaseDBModel]:
     async def create(
         self, *, creation_data: dict, session: AsyncSession | None = None
-    ) -> BaseDBModel:
+    ) -> T:
         async for s in get_db_session():
             session = s or session
             if "last_updated_at" not in creation_data.keys():
@@ -28,7 +29,7 @@ class BaseModelManager:
 
     async def update(
         self, *, id: UUID, update_data: dict, session: AsyncSession | None = None
-    ):
+    ) -> T:
         async for s in get_db_session():
             session = s or session
             if "last_updated_at" not in update_data.keys():
@@ -42,13 +43,18 @@ class BaseModelManager:
             await session.refresh(model)
             return model
 
-    async def get(self, session: AsyncSession | None = None, *whereclause) -> BaseModel:
+    async def get(self, session: AsyncSession | None = None, *whereclause) -> T:
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class).where(*whereclause)
-            return (await session.execute(query)).scalar_one()
+            try:
+                return (await session.execute(query)).scalar_one()
+            except NoResultFound:
+                raise self.model_class.DoesNotExist(
+                    f"object does not exist {whereclause}"
+                )
 
-    async def all(self, *, session: AsyncSession | None = None):
+    async def all(self, *, session: AsyncSession | None = None) -> list[T]:
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class)
@@ -59,3 +65,21 @@ class BaseModelManager:
             session = s or session
             query = delete(self.model_class).where(self.model_class.id == id)
             await session.execute(query)
+
+    def _bind_exceptions_to_model(self):
+        """
+        Bind DoesNotExist and MultipleObjectsReturned exceptions to the model class.
+        """
+        self.model_class.DoesNotExist = type(
+            f"{self.model_class.__name__}DoesNotExist", (DoesNotExist,), {}
+        )
+        self.model_class.AlreadyExist = type(
+            f"{self.model_class.__name__}AlreadyExist", (AlreadyExist,), {}
+        )
+
+    def __set_name__(self, owner: type[T], name: str):
+        """This dunder method lets us dynamically bind the model class to its respective
+        model manager
+        """
+        self.model_class = owner
+        self._bind_exceptions_to_model()

@@ -1,6 +1,9 @@
+from typing import Literal
 from uuid import UUID
 
 from sqlmodel import SQLModel
+
+from app.core.security import APIScope
 
 
 class ResponseData[T](SQLModel):
@@ -14,21 +17,25 @@ class PaginatedDataResponseData[T](SQLModel):
 
 
 class Token(SQLModel):
-    access_token: str
-    refresh_token: str
     token_type: str = "bearer"
 
 
-class AccessTokenSubject(SQLModel):
-    type: str = "access_token"
-    user: UUID
-    scope: list[str] = []
+class AuthToken(Token):
+    access_token: str
+    refresh_token: str
 
 
-class RefreshTokenSubject(SQLModel):
-    type: str = "refresh_token"
-    user: UUID
+class VerificationToken(Token):
+    verification_token: str | None
 
 
-class ClientVerificationToken(SQLModel):
-    verification_token: str
+class TokenSubject(SQLModel):
+    type: Literal["access_token", "refresh_token", "verification_token"]
+    user_id: UUID
+    scopes: list[APIScope] = []
+
+
+class PasswordReset(SQLModel):
+    user_id: UUID
+    otp: str
+    new_password: str

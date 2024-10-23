@@ -6,7 +6,7 @@ from typing import ClassVar
 from uuid import UUID
 
 from pydantic import AwareDatetime
-from sqlmodel import TIMESTAMP, Field, String
+from sqlmodel import TIMESTAMP, Field
 from sqlmodel import Enum as SAEnum
 
 from app.core.config import settings
@@ -31,7 +31,7 @@ class OTPRecord(BaseDBModel, table=True):
     __tablename__ = "otp_records"
 
     code: str = Field(
-        sa_column=Field(String(settings.OTP_LENGTH)),
+        max_length=settings.OTP_LENGTH,
         default_factory=generate_otp,
         description="one-time password",
     )

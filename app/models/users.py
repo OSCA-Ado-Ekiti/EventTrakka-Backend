@@ -1,7 +1,7 @@
 from typing import ClassVar
 
 from pydantic import EmailStr
-from sqlmodel import Field, String
+from sqlmodel import Field
 
 from app.core.security import get_password_hash
 from app.extras.models import BaseDBModel
@@ -11,10 +11,10 @@ from app.models.managers.users import UserModelManager
 class User(BaseDBModel, table=True):
     __tablename__ = "users"
 
-    email: EmailStr = Field(sa_column=Field(String(320)))
-    password: str = Field(sa_column=Field(String(60)))
-    first_name: str | None = Field(sa_column=Field(String(50)))
-    last_name: str | None = Field(sa_column=Field(String(50)))
+    email: EmailStr = Field(max_length=320)
+    password: str = Field(max_length=60)
+    first_name: str | None = Field(max_length=50)
+    last_name: str | None = Field(max_length=50)
     is_active: bool = Field(default=True)
     is_email_verified: bool = Field(False)
 

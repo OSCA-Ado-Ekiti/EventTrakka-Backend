@@ -1,13 +1,16 @@
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+from uuid import UUID
 
 from pydantic import AnyUrl, AwareDatetime, EmailStr
-from sqlmodel import JSON, Field, SQLModel, String
+from sqlmodel import JSON, TIMESTAMP, Field, Relationship, SQLModel
 from sqlmodel import Enum as SAEnum
 
 from app.extras.models import BaseDBModel
 
 if TYPE_CHECKING:
+    from .attendees import AttendeeQuestion
+    from .organizations import Organization
     from .tags import Tag
 
 
@@ -21,23 +24,12 @@ class EventMode(str, Enum):
     PHYSICAL = "PHYSICAL"
 
 
-class EventFeeMode(str, Enum):
-    FREE = "FREE"
-    PAID = "PAID"
-
-
 class Currency(str, Enum):
     USD = "USD"
     NGN = "NGN"
 
 
-class EventFee(SQLModel):
-    mode: EventFeeMode
-    amount: int | None
-    currency: Currency | None
-
-
-class EventPublicationStatus(SQLModel):
+class EventPublicationStatus(str, Enum):
     """
     This indicates the status of an event for public use, When an event is first created by an `Organization`,
     it is created in draft mode i.e. `EventPublicationStatus.DRAFT` which allows the `Organization` creating the
@@ -54,21 +46,63 @@ class EventPublicationStatus(SQLModel):
     ARCHIVE = "ARCHIVE"
 
 
-class Event(BaseDBModel):
+class EventFee(SQLModel):
+    amount: int = Field(default=0, ge=0)
+    currency: Currency
+
+
+class EventTag(SQLModel, table=True):
+    __tablename__ = "eventtags"
+
+    tag_id: UUID = Field(foreign_key="tags.id", primary_key=True)
+    event_id: UUID = Field(foreign_key="events.id", primary_key=True)
+
+
+class Event(BaseDBModel, table=True):
     __tablename__ = "events"
 
-    source: EventSource
-    status: EventPublicationStatus
-    mode_of_attending: EventMode
-    title: str
-    theme: str | None
+    source: EventSource = Field(
+        EventSource.EVENTTRAKKA, description="", sa_column=Field(SAEnum(EventSource))
+    )
+    organization_id: UUID | None = Field(
+        foreign_key="organizations.id", ondelete="CASCADE"
+    )
+    organization: Optional["Organization"] = Relationship()
+    status: EventPublicationStatus = Field(
+        EventPublicationStatus.DRAFT,
+        description="",
+        sa_column=Field(SAEnum(EventPublicationStatus)),
+    )
+    mode_of_attending: EventMode = Field(
+        description="", sa_column=Field(SAEnum(EventMode))
+    )
+    title: str = Field(max_length=128)
+    theme: str | None = Field(max_length=128)
     description: str | None
-    tags: list[Tag] | None
-    fee: EventFee
-    starts_at: AwareDatetime
-    ends_at: AwareDatetime | None
-    location: str | None
-    link: str | None
+    tags: list["Tag"] | None = Relationship(link_model=EventTag)
+    fee: EventFee | None = Field(None, sa_type=JSON(none_as_null=True))
+    starts_at: AwareDatetime = Field(sa_type=TIMESTAMP(timezone=True))
+    ends_at: AwareDatetime | None = Field(sa_type=TIMESTAMP(timezone=True))
+    location: str | None = Field(
+        max_length=128,
+        description="for physical events, address of the venue is required",
+    )
+    link: str | None = Field(
+        description="for virtual events, event link is required. a physical event may also be streamed live. this applies"
+    )
+    passcode: str | None = Field(
+        max_length=64,
+        description="some virtual events may require a passcode to be able join",
+    )
+    attendee_questionnaire: list["AttendeeQuestion"] | None = Field(
+        None,
+        description="attendee questionnaire is a list of fields used to retrieve additional information from the attendees",
+        sa_type=JSON(none_as_null=True),
+    )
+
+    @property
+    def is_free(self):
+        return self.fee is None
 
 
 class SocialMediaPlatform(str, Enum):
@@ -105,20 +139,20 @@ class EventOfficialType(str, Enum):
     KEY_NOTE_SPEAKER = "KEY_NOTE_SPEAKER"
 
 
-class EventOfficial(BaseDBModel):
+class EventOfficial(BaseDBModel, table=True):
     __tablename__ = "event_officials"
 
-    event: Event | None = Field(foreign_key="events", ondelete="CASCADE")
+    event_id: UUID | None = Field(foreign_key="events.id", ondelete="CASCADE")
     type: EventOfficialType = Field(sa_column=Field(SAEnum(EventOfficialType)))
-    first_name: str = Field(sa_column=Field(String(50)))
-    last_name: str = Field(sa_column=Field(String(50)))
+    first_name: str = Field(max_length=50)
+    last_name: str = Field(max_length=50)
     role: str = Field(
+        max_length=128,
         description=(
             "The role of the official at the organization (e.g. OSCA Ado-EKiti Lead) or the "
             "role of the guest or keynote speaker (e.g. C.T.O at Coyote Solutions)"
         ),
-        sa_column=Field(String(128)),
     )
     contact_information: ContactInformation | None = Field(
-        sa_column=Field(JSON(none_as_null=True))
+        sa_type=JSON(none_as_null=True)
     )

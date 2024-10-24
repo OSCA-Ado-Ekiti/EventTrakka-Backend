@@ -1,19 +1,27 @@
 from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from app.api.deps import CurrentUser
+from app.models import Organization
+from app.models.schemas.api import ResponseData
+from app.models.schemas.organizations import CreateOrganization
 
 router = APIRouter(prefix="/organizations")
 
 
-@router.post("/")
-async def create_organization(current_user: CurrentUser):
+@router.post("/", status_code=status.HTTP_201_CREATED)
+async def create_organization(current_user: CurrentUser, data: CreateOrganization):
     """Create an organization.
 
     Organizations are the different tech communities
     """
-    ...
+    organization = await Organization.objects.create_organization(
+        name=data.name, owner=current_user, about=data.about
+    )
+    return ResponseData[Organization](
+        detail="Organization successfully created", data=organization
+    )
 
 
 @router.get("/")

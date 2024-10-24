@@ -83,13 +83,13 @@ class Settings(BaseSettings):
     MAIL_PASSWORD: str = "doe"
     MAIL_FROM: EmailStr = "johndoe@eventtrakka.com"
     MAIL_FROM_NAME: str = "John Doe"
-    MAIL_PORT: int = 1026
     MAIL_SERVER: str = "test-smtp-server"
+    MAIL_PORT: int = 1026
     MAIL_STARTTLS: bool = False
     MAIL_SSL_TLS: bool = False
     MAIL_USE_CREDENTIALS: bool = False
     MAIL_VALIDATE_CERTS: bool = False
-    MAIL_TIMEOUT: int = 60  # 1 minute
+    MAIL_TIMEOUT: int = 60 * 2  # 2 minutes
 
     @computed_field
     @property

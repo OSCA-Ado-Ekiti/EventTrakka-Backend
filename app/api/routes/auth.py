@@ -168,7 +168,7 @@ async def obtain_access_token(
         )
         raise HTTPException(
             status_code=400,
-            detail=detail,
+            detail=detail.model_dump(),
         )
     token = generate_auth_token(user)
     return ResponseData[AuthToken](detail="Tokens successfully retrieved", data=token)

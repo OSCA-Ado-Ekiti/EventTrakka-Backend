@@ -1,10 +1,12 @@
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 from uuid import UUID
 
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 from app.extras.models import BaseDBModel
+
+from .managers.organizations import OrganizationModelManager
 
 if TYPE_CHECKING:
     from .users import User
@@ -24,10 +26,17 @@ class OrganizationMember(SQLModel):
 class Organization(BaseDBModel, table=True):
     __tablename__ = "organizations"
 
-    name: str = Field(max_length=128)
-    is_verified: bool
+    name: str = Field(max_length=128, unique=True)
+    is_verified: bool = Field(
+        False,
+        description="used to flag organizations that has been verified by eventtrakka",
+    )
     logo_url: str | None
     about: str | None
     owner_id: UUID = Field(foreign_key="users.id")
     owner: "User" = Relationship()
     members: list[OrganizationMember] = Field(default_factory=list, sa_type=JSON())
+
+    objects: ClassVar[OrganizationModelManager["Organization"]] = (
+        OrganizationModelManager()
+    )

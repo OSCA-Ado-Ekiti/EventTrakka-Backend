@@ -51,7 +51,7 @@ class EmailService:
         subject_context = {"project_name": settings.PROJECT_NAME}
         await self.send_mail(
             recipients=[email],
-            subject="Verify you Email - {{ project_name }}",
+            subject="Verify your Email - {{ project_name }}",
             template_name="verify-email.html",
             context=context,
             subject_context=subject_context,

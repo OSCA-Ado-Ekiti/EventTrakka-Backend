@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
-from jwt.exceptions import InvalidTokenError
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,8 @@ async def get_current_user(
         if token_type != subject.type:
             raise ValidationError("invalid token type")
     except (InvalidTokenError, ValidationError) as error:
+        if isinstance(error, ExpiredSignatureError):
+            credentials_exception.detail = "Token has expired"
         raise credentials_exception from error
     try:
         user: User = await User.objects.get(session, User.id == subject.user_id)

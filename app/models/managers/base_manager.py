@@ -60,6 +60,12 @@ class BaseModelManager[T: BaseDBModel]:
             query = select(self.model_class)
             return (await session.execute(query)).all()
 
+    async def filter(self, session: AsyncSession | None = None, *whereclause):
+        async for s in get_db_session():
+            session = s or session
+            query = select(self.model_class).where(*whereclause)
+            return (await session.execute(query)).all()
+
     async def delete(self, *, id: UUID, session: AsyncSession | None):
         async for s in get_db_session():
             session = s or session

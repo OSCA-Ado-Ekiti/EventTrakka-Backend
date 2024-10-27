@@ -52,7 +52,7 @@ def decode_jwt_subject(token: str) -> "TokenSubject":
     from app.models.schemas.api import TokenSubject
 
     payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-    return TokenSubject.model_validate(payload)
+    return TokenSubject.model_validate_json(payload["sub"])
 
 
 class APIScope(str, Enum):

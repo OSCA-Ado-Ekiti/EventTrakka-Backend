@@ -1,7 +1,12 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+from uuid import UUID
 
+from pydantic import ValidationError
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import column, select, text
 
+from app.core.db import get_db_session
 from app.models.managers.base_manager import BaseModelManager
 
 if TYPE_CHECKING:
@@ -40,3 +45,27 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
             creation_data["owner_id"] = owner.id
 
         return await super().create(creation_data=creation_data, session=session)
+
+    async def get_organizations(
+        self,
+        member: "User",
+        session: AsyncSession | None = None,
+    ) -> list[T]:
+        async for s in get_db_session():
+            session = s or session
+            query = (
+                select(self.model_class)
+                .select_from(self.model_class)
+                .join(
+                    func.jsonb_array_elements(self.model_class.members).alias(
+                        "members_jsonb"
+                    ),
+                    text("true"),  # LATERAL join
+                )
+                .where(
+                    func.jsonb_extract_path_text(column("members_jsonb"), "id")
+                    == str(member.id)
+                )
+            )
+            rows = await session.execute(query)
+            return [row._mapping[self.model_class.__name__] for row in rows]

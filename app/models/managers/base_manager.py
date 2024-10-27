@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
+from fastapi_pagination.ext.sqlmodel import paginate
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import delete, select
@@ -58,13 +59,13 @@ class BaseModelManager[T: BaseDBModel]:
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class)
-            return (await session.execute(query)).all()
+            return await paginate(session, query)
 
     async def filter(self, session: AsyncSession | None = None, *whereclause):
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class).where(*whereclause)
-            return (await session.execute(query)).all()
+            return await paginate(session, query)
 
     async def delete(self, *, id: UUID, session: AsyncSession | None):
         async for s in get_db_session():

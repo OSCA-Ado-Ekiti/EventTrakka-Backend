@@ -27,7 +27,10 @@ async def create_organization(current_user: CurrentUser, data: CreateOrganizatio
 @router.get("/")
 async def get_organizations(current_user: CurrentUser):
     """Retrieve organizations"""
-    ...
+    organizations = await Organization.objects.get_organizations(current_user)
+    return ResponseData[list[Organization]](
+        detail="Organizations retrieved successfully", data=organizations
+    )
 
 
 @router.post("/{id}/transfer-ownership")

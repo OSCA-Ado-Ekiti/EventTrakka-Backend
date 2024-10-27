@@ -1,6 +1,7 @@
 from fastapi import FastAPI
-from fastapi.routing import APIRoute
 from fastapi.responses import RedirectResponse
+from fastapi.routing import APIRoute
+from fastapi_pagination import add_pagination
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
@@ -29,6 +30,7 @@ if settings.all_cors_origins:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+add_pagination(app)
 
 
 @app.get("/", tags=["docs"])

@@ -1,6 +1,8 @@
 from fastapi import APIRouter
 
-router = APIRouter(prefix="/attendee")
+from app.core.utils import ENDPOINT_NOT_IMPLEMENTED
+
+router = APIRouter(prefix="/attendees")
 
 
 @router.post("/")
@@ -9,10 +11,4 @@ async def create_attendee():
 
     Attendees are users who sign up for an event
     """
-    ...
-
-
-@router.get("/")
-async def get_attendees():
-    """Retrieve attendees"""
-    ...
+    raise ENDPOINT_NOT_IMPLEMENTED

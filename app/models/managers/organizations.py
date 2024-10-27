@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
+from fastapi_pagination.ext.sqlmodel import paginate
 from pydantic import ValidationError
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,7 +47,7 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
 
         return await super().create(creation_data=creation_data, session=session)
 
-    async def get_organizations(
+    async def get_organizations_as_member(
         self,
         member: "User",
         session: AsyncSession | None = None,
@@ -67,5 +68,4 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
                     == str(member.id)
                 )
             )
-            rows = await session.execute(query)
-            return [row._mapping[self.model_class.__name__] for row in rows]
+            return await paginate(session, query)

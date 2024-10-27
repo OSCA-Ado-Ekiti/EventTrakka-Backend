@@ -47,7 +47,7 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
 
         return await super().create(creation_data=creation_data, session=session)
 
-    async def get_organizations(
+    async def get_organizations_as_member(
         self,
         member: "User",
         session: AsyncSession | None = None,

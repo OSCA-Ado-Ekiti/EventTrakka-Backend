@@ -44,7 +44,7 @@ class BaseModelManager[T: BaseDBModel]:
             await session.refresh(model)
             return model
 
-    async def get(self, session: AsyncSession | None = None, *whereclause) -> T:
+    async def get(self, session: AsyncSession | None, *whereclause) -> T:
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class).where(*whereclause)
@@ -61,7 +61,7 @@ class BaseModelManager[T: BaseDBModel]:
             query = select(self.model_class)
             return await paginate(session, query)
 
-    async def filter(self, session: AsyncSession | None = None, *whereclause):
+    async def filter(self, session: AsyncSession | None, *whereclause):
         async for s in get_db_session():
             session = s or session
             query = select(self.model_class).where(*whereclause)

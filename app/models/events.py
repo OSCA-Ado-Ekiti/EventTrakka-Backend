@@ -1,17 +1,48 @@
 from enum import Enum
 from typing import TYPE_CHECKING, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from pydantic import AnyUrl, AwareDatetime, EmailStr
-from sqlmodel import JSON, TIMESTAMP, Field, Relationship, SQLModel
+from sqlmodel import TIMESTAMP, Column, Field, Relationship, SQLModel
 from sqlmodel import Enum as SAEnum
 
-from app.extras.models import BaseDBModel
+from app.extras.models import BaseDBModel, MutableSABaseModel
 
 if TYPE_CHECKING:
-    from .attendees import AttendeeQuestion
     from .organizations import Organization
     from .tags import Tag
+
+
+class FieldType(str, Enum):
+    ATTENDEE_EMAIL = "ATTENDEE_EMAIL"
+    EMAIL = "EMAIL"
+    TEXT = "TEXT"
+    TEXTAREA = "TEXTAREA"
+    CHOICE = "CHOICE"
+
+
+class AttendeeQuestion(MutableSABaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    is_required: bool = Field(True, description="is the field a required field")
+    label: str = Field(
+        description="what to show in the form as the question label. e.g. Email Address:, Event Expectation:"
+    )
+    field_type: FieldType = Field(
+        description=(
+            "this determines how the field should be rendered in the frontend,"
+            " for ATTENDEE_EMAIL, the value is match with the email field of the"
+            " attendee model and does not need to be rendered in the frontend as"
+            " email is always required weather an event requires a questionnaire or not"
+        )
+    )
+    choices: list[str] | None = Field(None)
+    allow_multiple_choices: bool = Field(
+        False,
+        description="when the field type is a CHOICE, should the submission allow",
+    )
+
+
+AttendeeQuestionSAType = AttendeeQuestion.to_sa_type(many=True)
 
 
 class EventSource(str, Enum):
@@ -46,9 +77,12 @@ class EventPublicationStatus(str, Enum):
     ARCHIVE = "ARCHIVE"
 
 
-class EventFee(SQLModel):
+class EventFee(MutableSABaseModel):
     amount: int = Field(default=0, ge=0)
     currency: Currency
+
+
+EventFeeSAType = EventFee.to_sa_type()
 
 
 class EventTag(SQLModel, table=True):
@@ -80,7 +114,7 @@ class Event(BaseDBModel, table=True):
     theme: str | None = Field(max_length=128)
     description: str | None
     tags: list["Tag"] | None = Relationship(link_model=EventTag)
-    fee: EventFee | None = Field(None, sa_type=JSON(none_as_null=True))
+    fee: EventFee | None = Field(None, sa_column=Column(EventFeeSAType))
     starts_at: AwareDatetime = Field(sa_type=TIMESTAMP(timezone=True))
     ends_at: AwareDatetime | None = Field(sa_type=TIMESTAMP(timezone=True))
     location: str | None = Field(
@@ -97,7 +131,7 @@ class Event(BaseDBModel, table=True):
     attendee_questionnaire: list["AttendeeQuestion"] | None = Field(
         None,
         description="attendee questionnaire is a list of fields used to retrieve additional information from the attendees",
-        sa_type=JSON(none_as_null=True),
+        sa_column=Column(AttendeeQuestionSAType),
     )
 
     @property
@@ -113,12 +147,12 @@ class SocialMediaPlatform(str, Enum):
     YOUTUBE = "YOUTUBE"
 
 
-class SocialAccount(SQLModel):
+class SocialAccount(MutableSABaseModel):
     platform: SocialMediaPlatform
     link: AnyUrl
 
 
-class PhoneNumberInformation(SQLModel):
+class PhoneNumberInformation(MutableSABaseModel):
     country_code: str = Field("+234")
     number: str  # TODO regex for phone number
     is_hotline: bool
@@ -126,12 +160,15 @@ class PhoneNumberInformation(SQLModel):
     is_available_on_telegram: bool
 
 
-class ContactInformation(SQLModel):
+class ContactInformation(MutableSABaseModel):
     phone_numbers: list[PhoneNumberInformation]
     email_addresses: list[EmailStr]
     website: AnyUrl | None
     blog: AnyUrl | None
     social_accounts: list[SocialAccount]
+
+
+ContactInformationSAType = ContactInformation.to_sa_type()
 
 
 class EventOfficialType(str, Enum):
@@ -154,5 +191,5 @@ class EventOfficial(BaseDBModel, table=True):
         ),
     )
     contact_information: ContactInformation | None = Field(
-        sa_type=JSON(none_as_null=True)
+        sa_column=Column(ContactInformationSAType)
     )

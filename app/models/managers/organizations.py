@@ -12,7 +12,8 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
     async def create_organization(
         self,
         name: str,
-        owner: "User",
+        owner: Optional["User"] = None,
+        owner_id: UUID | None = None,
         about: str | None = None,
         session: AsyncSession | None = None,
     ) -> T:
@@ -21,15 +22,21 @@ class OrganizationModelManager[T: Organization](BaseModelManager):
             OrganizationMemberPermission,
         )
 
+        if not (owner or owner_id):
+            raise ValidationError("owner or owner_id must be provided for creation")
+
         permissions = [permission.value for permission in OrganizationMemberPermission]
         creation_data = {
             "name": name,
-            "owner": owner,
             "about": about,
+            "owner_id": owner_id,
             "members": [
                 OrganizationMember.model_validate(
-                    {"id": owner.id, "role": "Owner", "permissions": permissions}
+                    {"id": str(owner.id), "role": "Owner", "permissions": permissions}
                 )
             ],
         }
+        if owner:
+            creation_data["owner_id"] = owner.id
+
         return await super().create(creation_data=creation_data, session=session)

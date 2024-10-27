@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, status
+from fastapi_pagination import Page
 
 from app.api.deps import CurrentUser
 from app.models import Organization
@@ -25,12 +26,9 @@ async def create_organization(current_user: CurrentUser, data: CreateOrganizatio
 
 
 @router.get("/")
-async def get_organizations(current_user: CurrentUser):
+async def get_organizations(current_user: CurrentUser) -> Page[Organization]:
     """Retrieve organizations"""
-    organizations = await Organization.objects.get_organizations(current_user)
-    return ResponseData[list[Organization]](
-        detail="Organizations retrieved successfully", data=organizations
-    )
+    return await Organization.objects.get_organizations(current_user)
 
 
 @router.post("/{id}/transfer-ownership")

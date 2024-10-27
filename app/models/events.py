@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, ClassVar, Optional
 from uuid import UUID, uuid4
 
 from pydantic import AnyUrl, AwareDatetime, EmailStr
@@ -7,6 +7,8 @@ from sqlmodel import TIMESTAMP, Column, Field, Relationship, SQLModel
 from sqlmodel import Enum as SAEnum
 
 from app.extras.models import BaseDBModel, MutableSABaseModel
+
+from .managers.events import EventModelManager
 
 if TYPE_CHECKING:
     from .organizations import Organization
@@ -124,6 +126,7 @@ class Event(BaseDBModel, table=True):
     link: str | None = Field(
         description="for virtual events, event link is required. a physical event may also be streamed live. this applies"
     )
+    # TODO: some event provide per attendee passcode. support this feature.
     passcode: str | None = Field(
         max_length=64,
         description="some virtual events may require a passcode to be able join",
@@ -133,6 +136,8 @@ class Event(BaseDBModel, table=True):
         description="attendee questionnaire is a list of fields used to retrieve additional information from the attendees",
         sa_column=Column(AttendeeQuestionSAType),
     )
+
+    objects: ClassVar[EventModelManager["Event"]] = EventModelManager()
 
     @property
     def is_free(self):

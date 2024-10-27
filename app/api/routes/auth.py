@@ -68,7 +68,7 @@ def generate_auth_token(user: User) -> AuthToken:
     )
 
 
-@router.post("/signup", status_code=status.HTTP_201_CREATED)
+@router.post("/signup/", status_code=status.HTTP_201_CREATED)
 async def signup_via_email(data: CreateUser, background_tasks: BackgroundTasks):
     """Signup to EventTrakka with the email flow.
 
@@ -105,7 +105,7 @@ async def signup_via_email(data: CreateUser, background_tasks: BackgroundTasks):
         ) from error
 
 
-@router.post("/verify-email")
+@router.post("/verify-email/")
 async def verify_email(user: CurrentUserViaEmailVerificationToken, otp: str):
     """Verify the email address of the signed-up user after email link opened."""
     try:
@@ -125,7 +125,7 @@ async def verify_email(user: CurrentUserViaEmailVerificationToken, otp: str):
         ) from error
 
 
-@router.post("/resend-verify-email")
+@router.post("/resend-verify-email/")
 async def resend_verify_email(
     user: CurrentUserViaEmailVerificationToken, background_tasks: BackgroundTasks
 ):
@@ -139,7 +139,7 @@ async def resend_verify_email(
     )
 
 
-@router.post("/access-token")
+@router.post("/access-token/")
 async def obtain_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     background_tasks: BackgroundTasks,
@@ -174,14 +174,14 @@ async def obtain_access_token(
     return ResponseData[AuthToken](detail="Tokens successfully retrieved", data=token)
 
 
-@router.post("/refresh-token")
+@router.post("/refresh-token/")
 async def refresh_access_token(current_user: CurrentUserViaRefreshToken):
     """Refresh the access token after expiry"""
     token = generate_auth_token(current_user)
     return ResponseData[AuthToken](detail="Token refresh successful", data=token)
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password/")
 async def forgot_password(email: EmailStr, background_tasks: BackgroundTasks):
     """Initiate the password reset flow.
 
@@ -216,7 +216,7 @@ async def forgot_password(email: EmailStr, background_tasks: BackgroundTasks):
         ) from error
 
 
-@router.post("/reset-password")
+@router.post("/reset-password/")
 async def reset_password(data: PasswordReset):
     """Complete the password reset flow. not to be used directly"""
     try:

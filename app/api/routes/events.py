@@ -19,7 +19,7 @@ async def get_events(current_user: CurrentUser):
     ...
 
 
-@router.patch("/{id}")
+@router.patch("/{id}/")
 async def partial_update_event(id: UUID, current_user: CurrentUser):
     """Update a tech events"""
     ...

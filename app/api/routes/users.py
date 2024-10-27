@@ -7,7 +7,7 @@ from app.models.schemas.users import UserPublic
 router = APIRouter(prefix="/users")
 
 
-@router.get("/current-user")
+@router.get("/current-user/")
 async def get_current_user(current_user: CurrentUser):
     """Retrieve the details of the user with the provided access token"""
     return ResponseData[UserPublic](
@@ -16,7 +16,7 @@ async def get_current_user(current_user: CurrentUser):
     )
 
 
-@router.patch("/current-user")
+@router.patch("/current-user/")
 async def update_current_user(current_user: CurrentUser):
     """Update the user information for the user with the provided access token"""
     ...

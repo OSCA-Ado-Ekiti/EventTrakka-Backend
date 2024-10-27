@@ -31,13 +31,14 @@ async def get_organizations(current_user: CurrentUser) -> Page[Organization]:
     return await Organization.objects.get_organizations(current_user)
 
 
-@router.post("/{id}/transfer-ownership")
+
+@router.post("/{id}/transfer-ownership/")
 async def transfer_organization_ownership(id: UUID, current_user: CurrentUser):
     """Transfer the ownership of an organization from one user to another"""
     ...
 
 
-@router.post("/{id}/update-members")
+@router.post("/{id}/update-members/")
 async def update_organization_members(id: UUID, current_user: CurrentUser):
     """Update the members of an organization by added or removing users"""
     ...

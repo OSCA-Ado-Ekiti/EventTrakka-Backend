@@ -16,6 +16,7 @@ dependencies = [
     "python-multipart>=0.0.12",
     "sqlmodel>=0.0.22",
     "fastapi-mail>=1.4.1",
+    "fastapi-pagination>=0.12.31",
 ]
 
 [tool.uv]

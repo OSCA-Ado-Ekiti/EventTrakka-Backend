@@ -1,7 +1,7 @@
 services:
   web:
     build: .
-    image: eventtrakka-backend:latest
+    image: eventtrakka-backend:$IMAGE_VERSION
     command: fastapi dev app/main.py --host 0.0.0.0 --port 8082
     volumes:
       - "/eventtrakka-backend/.venv"
@@ -15,7 +15,7 @@ services:
     restart: on-failure
 
   database:
-    image: postgres
+    image: docker.io/postgres
     env_file:
       - ./.env
     volumes:
